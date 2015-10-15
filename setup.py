@@ -30,9 +30,6 @@ setup(
     ],
     packages=[
         'leothebot',
-        'leothebot.leo',
-        'leothebot.quotes',
-        'leothebot.telegram',
     ],
     scripts=['levtolstoy'],
 )
