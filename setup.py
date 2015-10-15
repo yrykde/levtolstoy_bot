@@ -5,11 +5,14 @@ from distutils.core import setup
 install_requires = (
     'paramiko',
     'requests',
-    'flask',
+    'pyyaml',
+    'klein',
+    'twisted',
+    'nltk',
 )
 
 tests_require = (
-    'moto',
+    'mock',
     'pylint',
     'pep8',
 )
