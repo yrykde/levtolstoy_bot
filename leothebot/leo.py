@@ -7,7 +7,10 @@
 
 import random
 
+from twisted.internet.defer import inlineCallbacks, returnValue
+
 from . import quotes
+from state import state
 
 class Leo(object):
     def __init__(self, telegram):
@@ -19,8 +22,11 @@ class Leo(object):
     # Incoming triggers processing
     #
 
+    @inlineCallbacks
     def incoming_message(self, payload):
         print("payload= %r" % payload)
+        print(id(state))
+        returnValue(None)
 
     #
     # State persistence between service restarts

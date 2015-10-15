@@ -7,6 +7,7 @@ install_requires = (
     'requests',
     'pyyaml',
     'klein',
+    'treq',
     'twisted',
     'nltk',
 )
@@ -29,7 +30,8 @@ setup(
     tests_require=tests_require,
     classifiers=[
         'Environment :: Console',
-        'Framework :: Flask',
+        'Framework :: Klein',
+        'Framework :: Twisted',
     ],
     packages=[
         'leothebot',

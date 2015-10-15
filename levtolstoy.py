@@ -9,23 +9,26 @@ import sys
 import time
 import yaml
 
-from flask import Flask, request
+from klein import Klein
+from twisted.internet.defer import inlineCallbacks, returnValue
 
 from leothebot import telegram, leo
+from leothebot.state import state
 
 
-app = Flask(__name__)
+app = Klein()
 
 
 @app.route("/levtolstoy/<code>", methods=['POST'])
-def webhook_callback(code=None):
-    if code != app.config['webhook_code']:
-        return ""
+@inlineCallbacks
+def webhook_callback(request, code=None):
+    if code != state.config['webhook_code']:
+        returnValue('')
 
     payload = json.loads(request.data)
-    app.config['leo'].incoming_message(payload=payload)
+    yield state.actors['leo'].incoming_message(payload=payload)
 
-    return "OK"
+    returnValue('')
 
 
 def generate_webhook_code(length=50):
@@ -41,28 +44,30 @@ def main():
 
     with open(sys.argv[1], 'r') as config_f:
         config = yaml.load(config_f)
-    app.config.update(config)
+    state.config.update(config)
 
     # Initialize Leo
-    app.config['telegram'] = telegram.TelegramAPI(
+    state.actors['telegram'] = telegram.TelegramAPI(
         token=config['server']['telegram_token'])
-    app.config['leo'] = leo.Leo(telegram=app.config['telegram'])
-    app.config['leo'].restore_state()
-    app.config['webhook_code'] = generate_webhook_code()
+    state.actors['leo'] = leo.Leo(telegram=state.actors['telegram'])
+    state.actors['leo'].restore_state()
+    state.config['webhook_code'] = generate_webhook_code()
 
     # Enable Telegram's webhook
-    app.config['telegram'].initialize_webhook(
+    state.actors['telegram'].initialize_webhook(
         endpoint="{0}/levtolstoy/{1}".format(
-            app.config['server']['root_url'],
-            app.config['webhook_code']),
-        certificate=app.config['server']['certificate'])
+            state.config['server']['root_url'],
+            state.config['webhook_code']),
+        certificate=state.config['server']['certificate'])
 
-    # Enter Flask's loop
-    app.run(port=app.config['server']['port'])
+    # Enter Klein's loop
+    app.run(
+        host=state.config['server']['host'],
+        port=state.config['server']['port'])
 
     # Save state and shutdown
-    app.config['telegram'].disable_webhook()
-    app.config['leo'].persist_state()
+    state.actors['telegram'].disable_webhook()
+    state.actors['leo'].persist_state()
 
 if __name__ == '__main__':
     r = main()

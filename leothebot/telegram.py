@@ -30,13 +30,15 @@ class TelegramAPI(object):
         return response.json()
 
     def initialize_webhook(self, endpoint, certificate):
-        self.send(
+        r = self.send(
             command='setWebhook',
             params={'url': endpoint},
             files={"certificate": ('certificate', certificate)})
+        print(r)
 
     def disable_webhook(self):
-        self.send(
+        r = self.send(
             command="setWebhook",
             params={"url": ""})
+        print(r)
 
