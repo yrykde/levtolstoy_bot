@@ -28,5 +28,11 @@ setup(
         'Environment :: Console',
         'Framework :: Flask',
     ],
-    scripts=["levtolstoy"],
+    packages=[
+        'leothebot',
+        'leothebot.leo',
+        'leothebot.quotes',
+        'leothebot.telegram',
+    ],
+    scripts=['levtolstoy'],
 )

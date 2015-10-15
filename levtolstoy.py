@@ -7,87 +7,22 @@ import random
 import requests
 import sys
 import time
-from flask import Flask, request, g
+from flask import Flask, request
+
+from leothebot import telegram, leo
+
+
 app = Flask(__name__)
-
-
-QUOTE_API_ENDPOINT = "http://api.forismatic.com/api/1.0/"
-TG_API_ENDPOINT = "https://api.telegram.org/bot"
-
-CONFIG = {}
-
-
-class TelegramAPIError(Exception):
-    pass
-
-
-class TelegramAPI(object):
-    def __init__(self, endpoint, token):
-        self.endpoint = endpoint
-        self.token = token
-
-    def send(self, command, params={}):
-        url = "{0}{1}/{2}".format(
-            self.endpoint,
-            self.token,
-            command)
-        response = requests.post(url=url, data=params)
-        print("url=%s" % url)
-
-        if not response.ok:
-            raise TelegramAPIError
-
-        return response.json()
-
-    def initialize_webhook(self, url, certificate):
-        r = self.send(
-            command="setWebhook",
-            params={"url": url,
-                    "certificate": certificate})
-        print("webhook_url=%s" % url)
-        print(r)
-
-    def disable_webhook(self):
-        r = self.send(
-            command="setWebhook",
-            params={"url": ""})
-
-        print(r)
-
-
-def get_random_quote(lang='ru'):
-    random.seed(time.time())
-
-    quote_params = {
-        'method': 'getQuote',
-        'key': '{0}'.format(random.randint(100, 999999)),
-        'format': 'json',
-        'lang': lang}
-
-    response = requests.post(
-        url="http://api.forismatic.com/api/1.0/",
-        data=quote_params)
-
-    quote = "пукнул, сорян"
-
-    if not response.ok:
-        return quote
-
-    try:
-        quote = response.json()['quoteText']
-    except KeyError:
-        pass
-
-    return quote
 
 
 @app.route("/levtolstoy/<code>", methods=['POST'])
 def webhook_callback(code=None):
-    if code != app.config["webhook_code"]:
+    if code != app.config['webhook_code']:
         return ""
 
-    print("request.data = %r" % request.data)
-    print("request.form = %r" % request.form)
+    payload = json.loads(request.data)
+    app.config['leo'].incoming_message(payload=payload)
+
     return "OK"
 
 
@@ -96,21 +31,26 @@ def main():
         print("Use: levtolstoy <config file path>")
         return 1
 
-    global CONFIG
-    CONFIG = json.load(open(sys.argv[1], "r"))
-    app.config.update(CONFIG)
+    config = json.load(open(sys.argv[1], "r"))
+    app.config.update(config)
 
-    app.config['telegram'] = telegram = \
-        TelegramAPI(TG_API_ENDPOINT, CONFIG["telegram_token"])
+    # Initialize Leo
+    app.config['telegram'] = telegram.TelegramAPI(config["telegram_token"])
+    app.config['leo'] = leo.Leo(telegram=app.config['telegram'])
+    app.config['leo'].restore_state()
 
-    telegram.initialize_webhook(
-        url="{0}/levtolstoy/{1}".format(
-            CONFIG["root_url"], CONFIG["webhook_code"]),
-        certificate=CONFIG["certificate"])
+    # Enable Telegram's webhook
+    app.config['telegram'].initialize_webhook(
+        endpoint="{0}/levtolstoy/{1}".format(
+            config["root_url"], config["webhook_code"]),
+        certificate=config["certificate"])
 
-    app.run(port=CONFIG.get('port', None))
+    # Enter Flask's loop
+    app.run(port=config.get('port', None))
 
-    telegram.disable_webhook()
+    # Save state and shutdown
+    app.config['telegram'].disable_webhook()
+    app.config['leo'].persist_state()
 
 if __name__ == "__main__":
     r = main()
