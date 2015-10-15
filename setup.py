@@ -16,7 +16,7 @@ tests_require = (
 
 setup(
     name="levtolstoy_bot",
-    version=version,
+    version="0.0.1",
     url='https://github.com/tonylazarew/levtolstoy_bot',
     author='Anton Lazarev',
     author_email='tony@lazarew.me',
