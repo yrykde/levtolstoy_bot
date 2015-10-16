@@ -23,8 +23,9 @@ def reactor_sleep(sleep_time):
 class Leo(object):
     def __init__(self, telegram):
         self.telegram = telegram
-
         self.quotes = quotes.QuoteFetcher()
+
+        self._config = state.config['leo_brain']
 
     #
     # Incoming triggers processing
@@ -64,8 +65,8 @@ class Leo(object):
     @defer.inlineCallbacks
     def send_message(self, chat_id, text, **kw):
         # Simulate typing
-        typing_delay = int(.07 * len(text))
-        print("typing for %d sec" % typing_delay)
+        typing_delay = int(self._config['typing_speed'] * len(text))
+        print('typing for %d sec' % typing_delay)
 
         # After a while chat action does expire. This loop makes sure
         # that it is being updated regularly.
