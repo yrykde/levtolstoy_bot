@@ -5,7 +5,10 @@
 # author: tony@lazarew.me
 
 import random
-import requests
+import time
+import treq
+
+from twisted.internet import reactor, defer
 
 
 QUOTE_API_ENDPOINT = "http://api.forismatic.com/api/1.0/"
@@ -15,6 +18,7 @@ class QuoteFetcher(object):
     def __init__(self, lang='ru'):
         self._lang = lang
 
+    @defer.inlineCallbacks
     def get_quote(self):
         random.seed(time.time())
 
@@ -24,18 +28,17 @@ class QuoteFetcher(object):
             'format': 'json',
             'lang': self._lang}
 
-        response = requests.post(
+        response = yield treq.post(
             url=QUOTE_API_ENDPOINT,
             data=quote_params)
 
         quote = "пукнул, сорян"
 
-        if not response.ok:
-            return quote
+        content = yield response.json()
 
         try:
-            quote = response.json()['quoteText']
+            quote = content['quoteText']
         except KeyError:
             pass
 
-        return quote
+        defer.returnValue(quote)

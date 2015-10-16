@@ -11,7 +11,7 @@ import time
 import yaml
 
 from klein import Klein
-from twisted.internet.defer import inlineCallbacks, returnValue
+from twisted.internet import defer, reactor
 
 from leothebot import telegram, leo
 from leothebot.state import state
@@ -21,15 +21,14 @@ app = Klein()
 
 
 @app.route("/levtolstoy/<code>", methods=['POST'])
-@inlineCallbacks
 def webhook_callback(request, code=None):
     if code != state.config['webhook_code']:
-        returnValue('')
+        return ''
 
-    payload = json.loads(request.data)
-    yield state.actors['leo'].incoming_message(payload=payload)
+    payload = json.loads(''.join([l for l in request.content]))
+    state.actors['leo'].incoming_message(payload=payload)
 
-    returnValue('')
+    return 'ok'
 
 
 def generate_webhook_code(length=50):
