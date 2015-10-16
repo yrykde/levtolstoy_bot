@@ -4,11 +4,8 @@
 import json
 import os
 import random
-import requests
 import string
 import sys
-import time
-import yaml
 
 from klein import Klein
 from twisted.internet import defer, reactor
@@ -42,9 +39,7 @@ def main():
         print('Use: levtolstoy <config file path>')
         return 1
 
-    with open(sys.argv[1], 'r') as config_f:
-        config = yaml.load(config_f)
-    state.config.update(config)
+    state.load_config(config_file=sys.argv[1])
 
     # Initialize Leo
     state.actors['telegram'] = telegram.TelegramAPI(
