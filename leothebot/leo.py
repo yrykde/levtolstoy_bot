@@ -10,7 +10,7 @@ import random
 from twisted.internet import reactor, defer
 
 from . import quotes
-from state import state
+from state import state as singleton_state
 
 
 def reactor_sleep(sleep_time):
@@ -21,11 +21,28 @@ def reactor_sleep(sleep_time):
 
 
 class Leo(object):
-    def __init__(self, telegram):
+    def __init__(self, telegram, state=None, quotes=None):
         self.telegram = telegram
-        self.quotes = quotes.QuoteFetcher()
 
-        self._config = state.config['leo_brain']
+        if quotes is None:
+            quotes = quotes.QuoteFetcher()
+        self.quotes = quotes
+
+        if state is None:
+            state = singleton_state
+        self.state = state
+
+        self._config = self.state.config['leo_brain']
+
+    #
+    # State persistence between service restarts
+    #
+
+    def restore_state(self):
+        pass
+
+    def persist_state(self):
+        pass
 
     #
     # Incoming triggers processing
@@ -84,13 +101,3 @@ class Leo(object):
                 yield reactor_sleep(10)
 
         yield self.telegram.send_message(chat_id=chat_id, text=text, **kw)
-
-    #
-    # State persistence between service restarts
-    #
-
-    def restore_state(self):
-        pass
-
-    def persist_state(self):
-        pass
