@@ -43,7 +43,7 @@ def main():
 
     # Initialize Leo
     state.actors['telegram'] = telegram.TelegramAPI(
-        token=config['server']['telegram_token'])
+        token=state.config['server']['telegram_token'])
     state.actors['leo'] = leo.Leo(telegram=state.actors['telegram'])
     state.actors['leo'].restore_state()
     state.config['webhook_code'] = generate_webhook_code()
