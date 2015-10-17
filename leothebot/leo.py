@@ -9,7 +9,7 @@ import random
 
 from twisted.internet import reactor, defer
 
-from . import quotes
+from quotes import QuoteFetcher
 from state import state as singleton_state
 
 
@@ -25,7 +25,7 @@ class Leo(object):
         self.telegram = telegram
 
         if quotes is None:
-            quotes = quotes.QuoteFetcher()
+            quotes = QuoteFetcher()
         self.quotes = quotes
 
         if state is None:
