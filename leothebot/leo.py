@@ -56,9 +56,23 @@ class Leo(object):
         """
         return reactor_sleep(random.randint(2, 6))
 
-    @defer.inlineCallbacks
     def incoming_message(self, payload):
+        """This is being triggered by the transport whenever we receive a new
+        message.
+        """
         print("payload=%r" % payload)
+
+        # Process the incoming message
+        d_process = self.process_message(payload)
+
+        # Possibly respond to a message
+        d_respond = self.respond_with_quote(payload)
+
+        return defer.DeferredList([d_process, d_respond])
+
+
+    @defer.inlineCallbacks
+    def respond_with_quote(self, payload):
         chat_id = payload['message']['chat']['id']
         reply_to_message_id = random.choice(
             (None, payload['message']['message_id']))
@@ -72,8 +86,6 @@ class Leo(object):
             chat_id=chat_id,
             text=quote,
             reply_to_message_id=reply_to_message_id)
-
-        defer.returnValue(None)
 
     #
     # Output methods with realistic chat actions
@@ -101,3 +113,10 @@ class Leo(object):
                 yield reactor_sleep(10)
 
         yield self.telegram.send_message(chat_id=chat_id, text=text, **kw)
+
+    #
+    # Text processing
+    #
+    def process_message(self, payload):
+        # TODO(tony): parse the message, analyze it, log it, whatever needed
+        return defer.succeed(True)
