@@ -10,7 +10,6 @@ import treq
 from twisted.internet import defer
 
 
-
 class TelegramAPIError(Exception):
     pass
 
@@ -65,7 +64,6 @@ class TelegramAPI(object):
         print(r)
 
     def disable_webhook(self):
-        # This
         r = self.send_blocking(
             command="setWebhook",
             params={"url": ""})
@@ -77,6 +75,9 @@ class TelegramAPI(object):
 
     @defer.inlineCallbacks
     def send(self, command, params=None, files=None):
+        if params is None:
+            params = {}
+
         url = "{0}{1}/{2}".format(
             self.endpoint,
             self.token,
