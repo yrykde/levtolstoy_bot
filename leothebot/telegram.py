@@ -52,7 +52,7 @@ class TelegramAPI(object):
             url=url, data=ensure_utf8(params), files=files)
 
         if not response.ok:
-            raise TelegramAPIError
+            raise TelegramAPIError(response.content)
 
         return response.json()
 
