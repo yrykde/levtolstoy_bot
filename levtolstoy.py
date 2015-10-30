@@ -10,7 +10,7 @@ import sys
 from klein import Klein
 from twisted.internet import defer, reactor
 
-from leothebot import telegram, leo
+from leothebot import telegram, translate, leo
 from leothebot.state import state
 
 
@@ -44,7 +44,11 @@ def main():
     # Initialize Leo
     state.actors['telegram'] = telegram.TelegramAPI(
         token=state.config['server']['telegram_token'])
-    state.actors['leo'] = leo.Leo(telegram=state.actors['telegram'])
+    state.actors['translate'] = translate.TranslateAPI(
+        token=state.config['server']['google_translate_api_token'])
+    state.actors['leo'] = leo.Leo(
+        telegram=state.actors['telegram'],
+        translate=state.actors['translate'])
     state.actors['leo'].restore_state()
     state.config['webhook_code'] = generate_webhook_code()
 

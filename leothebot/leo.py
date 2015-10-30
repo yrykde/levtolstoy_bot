@@ -21,7 +21,7 @@ def reactor_sleep(sleep_time):
 
 
 class Leo(object):
-    def __init__(self, telegram, state=None, quotes=None):
+    def __init__(self, telegram, state=None, quotes=None, translate=None):
         self.telegram = telegram
 
         if quotes is None:
@@ -31,6 +31,8 @@ class Leo(object):
         if state is None:
             state = singleton_state
         self.state = state
+
+        self.translate = translate
 
         self._config = self.state.config['leo_brain']
 
@@ -66,26 +68,64 @@ class Leo(object):
         d_process = self.process_message(payload)
 
         # Possibly respond to a message
-        d_respond = self.respond_with_quote(payload)
+        d_respond = self.respond_with_something(payload)
 
         return defer.DeferredList([d_process, d_respond])
 
 
     @defer.inlineCallbacks
-    def respond_with_quote(self, payload):
+    def respond_with_something(self, payload):
+        if 'text' not in payload['message']:
+            defer.returnValue(None)
+
+        text = payload['message']['text']
         chat_id = payload['message']['chat']['id']
         reply_to_message_id = random.choice(
             (None, payload['message']['message_id']))
 
-        quote = yield self.quotes.get_quote()
+        respond_with_quote = random.choice([False, True])
+        double_translate = random.choice([False, True])
+
+        if respond_with_quote:
+            reponse_text = yield self.quotes.get_quote()
+        else:
+            reponse_text = text
+            double_translate = True
+
+        if double_translate:
+            reponse_text = yield self.double_translate(reponse_text)
+
+        print("respond_with_quote = %r" % respond_with_quote)
+        print("double_translate = %r" % double_translate)
 
         # Simulating reaction
         yield self.reaction_delay(payload)
 
         yield self.send_message(
             chat_id=chat_id,
-            text=quote,
+            text=reponse_text,
             reply_to_message_id=reply_to_message_id)
+
+    @defer.inlineCallbacks
+    def double_translate(self, text):
+        # This is a simple Google translate trick. This method will eventually
+        # become saner.
+        detection = yield self.translate.detect(text=text)
+        src_lang = detection['data']['detections'][0][0]['language']
+        print("src_lang = %r" % src_lang)
+
+        languages = yield self.translate.languages()
+        dest_lang = random.choice(languages.keys())
+        print("dest_lang = %r" % dest_lang)
+
+        # Translate forth and back
+        translation = yield self.translate.translate(
+            text=text, source=src_lang, target=dest_lang)
+        dest_text = translation['data']['translations'][0]['translatedText']
+
+        translation = yield self.translate.translate(
+            text=dest_text, source=dest_lang, target=src_lang)
+        defer.returnValue(translation['data']['translations'][0]['translatedText'])
 
     #
     # Output methods with realistic chat actions

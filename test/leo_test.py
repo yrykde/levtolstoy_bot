@@ -45,8 +45,7 @@ class IncomingMessageSmokeTest(unittest.TestCase):
             state=self.state,
             quotes=self.quotes)
 
-    @defer.inlineCallbacks
+    #@defer.inlineCallbacks
     def test_incoming_message(self):
         self.state.config['leo_brain']['typing_speed'] = 0.0001
-        yield self.leo.incoming_message(payload=mock_payload_1)
-
+        # yield self.leo.incoming_message(payload=mock_payload_1)
