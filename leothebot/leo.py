@@ -13,6 +13,11 @@ from quotes import QuoteFetcher
 from state import state as singleton_state
 
 
+# NLTK stuff, will move out
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.stem.snowball import SnowballStemmer
+
+
 def reactor_sleep(sleep_time):
     """Reactor based sleep()."""
     d = defer.Deferred()
@@ -35,6 +40,53 @@ class Leo(object):
         self.translate = translate
 
         self._config = self.state.config['leo_brain']
+
+        # NLTK stuff
+        self.nl_init_stemmer(self._config['nltk_language'])
+        self.state.runtime['address_stems'] = \
+            self.nl_extract_stems(self._config['addresses'])
+
+    #
+    # TODO(tony): This will move out to a separate language processing
+    # class. For now it's just a PoC and stays here.
+    #
+
+    def nl_init_stemmer(self, language):
+        self.stemmer = SnowballStemmer(language)
+
+    def nl_stem(self, word):
+        return self.stemmer.stem(word)
+
+    def nl_extract_stems(self, words):
+        stems = set()
+        for word in words:
+            stems.add(self.nl_stem(word).encode('utf8'))
+        return stems
+
+    def nl_find_address_in_text(self, text, language='english'):
+        allowed_punct = ('.', '!', '?', ',')
+        found = False
+
+        for sentence in sent_tokenize(text, language=language):
+            if found:
+                break
+
+            for word in word_tokenize(sentence, language=language):
+                stem = self.stemmer.stem(word).encode('utf8')
+                if stem in self.state.runtime['address_stems']:
+                    found = True
+                    continue
+
+                if found:
+                    if word[0] in allowed_punct:
+                        break
+                    else:
+                        found = False
+
+        if found:
+            return True
+
+        return False
 
     #
     # State persistence between service restarts
@@ -72,10 +124,10 @@ class Leo(object):
 
         return defer.DeferredList([d_process, d_respond])
 
-
     @defer.inlineCallbacks
     def respond_with_something(self, payload):
-        if 'text' not in payload['message']:
+        should_respond = yield self.should_respond(payload)
+        if not should_respond:
             defer.returnValue(None)
 
         text = payload['message']['text']
@@ -98,13 +150,35 @@ class Leo(object):
         print("respond_with_quote = %r" % respond_with_quote)
         print("double_translate = %r" % double_translate)
 
-        # Simulating reaction
-        yield self.reaction_delay(payload)
-
         yield self.send_message(
             chat_id=chat_id,
             text=reponse_text,
             reply_to_message_id=reply_to_message_id)
+
+    @defer.inlineCallbacks
+    def should_respond(self, payload):
+        # Check if the bot should respond to an event
+        if 'text' not in payload['message']:
+            defer.returnValue(False)
+
+        # Simulating reaction
+        yield self.reaction_delay(payload)
+
+        # Respond if the message is a direct reply to one of the bot's messages
+        bot_name = self._config['telegram_bot_name']
+        try:
+            if bot_name == payload['message']['reply_to_message']['from']['username']:
+                print("should_respond(): yes, direct reply")
+                defer.returnValue(True)
+        except KeyError:
+            pass
+
+        # Check if the message is addressed to the bot
+        if self.nl_find_address_in_text(payload['message']['text']):
+            print("should_respond(): yes, was mentioned")
+            defer.returnValue(True)
+
+        defer.returnValue(False)
 
     @defer.inlineCallbacks
     def double_translate(self, text):
@@ -124,7 +198,9 @@ class Leo(object):
         dest_text = translation['data']['translations'][0]['translatedText']
 
         translation = yield self.translate.translate(
-            text=dest_text, source=dest_lang, target=src_lang)
+            text=dest_text,
+            source=dest_lang,
+            target=self._config['google_translate_language'])
         defer.returnValue(translation['data']['translations'][0]['translatedText'])
 
     #
