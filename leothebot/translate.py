@@ -36,8 +36,11 @@ class TranslateAPI(object):
         content = yield response.json()
         defer.returnValue(content)
 
-    def languages(self):
-        return self.send(uri='/languages')
+    def languages(self, target=None):
+        params = {}
+        if target is not None:
+            params = {'target': target}
+        return self.send(uri='/languages', params=params)
 
     def translate(self, text, source, target):
         return self.send(params={

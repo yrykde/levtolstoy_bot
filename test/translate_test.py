@@ -23,6 +23,12 @@ class TranslateSmokeTest(unittest.TestCase):
         self.assertTrue(self.treq_get.called)
 
     @defer.inlineCallbacks
+    def test_languages_target(self):
+        yield self.translate_api.languages(target='en')
+
+        self.assertTrue(self.treq_get.called)
+
+    @defer.inlineCallbacks
     def test_detect(self):
         yield self.translate_api.detect(text="this is a text")
 
