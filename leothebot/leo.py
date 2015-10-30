@@ -189,7 +189,7 @@ class Leo(object):
         print("src_lang = %r" % src_lang)
 
         languages = yield self.translate.languages()
-        dest_lang = random.choice(languages.keys())
+        dest_lang = random.choice([l for l in languages.keys() if l != src_lang])
         print("dest_lang = %r" % dest_lang)
 
         # Translate forth and back
