@@ -42,9 +42,9 @@ class Leo(object):
         self._config = self.state.config['leo_brain']
 
         # NLTK stuff
-        self.nl_init_stemmer(self._config['nltk_language'])
+        self.nl_init_stemmer(self._config.setdefault('nltk_language', 'english'))
         self.state.runtime['address_stems'] = \
-            self.nl_extract_stems(self._config['addresses'])
+            self.nl_extract_stems(self._config.setdefault('addresses', []))
 
     #
     # TODO(tony): This will move out to a separate language processing
