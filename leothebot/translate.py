@@ -9,6 +9,10 @@ import treq
 from twisted.internet import defer
 
 
+class TranslateAPIError(Exception):
+    pass
+
+
 def ensure_utf8(params):
     for k, v in params.items():
         params[k] = unicode(v).encode('utf-8')
@@ -36,11 +40,20 @@ class TranslateAPI(object):
         content = yield response.json()
         defer.returnValue(content)
 
+    @defer.inlineCallbacks
     def languages(self, target=None):
         params = {}
         if target is not None:
             params = {'target': target}
-        return self.send(uri='/languages', params=params)
+        data = yield self.send(uri='/languages', params=params)
+
+        try:
+            languages = data['data']['languages']
+        except KeyError:
+            raise TranslateAPIError('Invalid response from Google')
+
+        structured_dict = {l['language']: l.get('name') for l in languages}
+        defer.returnValue(structured_dict)
 
     def translate(self, text, source, target):
         return self.send(params={
