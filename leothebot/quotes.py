@@ -8,6 +8,7 @@ import random
 import time
 import treq
 
+#import reactor? for what?
 from twisted.internet import reactor, defer
 
 
