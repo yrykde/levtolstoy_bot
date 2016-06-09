@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#wtf
+#wtf omg
 from . import state, \
               telegram, \
               quotes, \
